@@ -25,7 +25,7 @@ def build_wheel_metadata(root: Path, metadata_directory: Path) -> WheelFolderWri
     analysis = analyse_package(root)
     metadata = WheelMetadata(
         analysis.snake_name,
-        str(analysis.project["version"]),
+        analysis.project["version"],
         f"{__name__} {__version__}",
     )
     writer = WheelFolderWriter(metadata_directory, metadata)
@@ -52,7 +52,7 @@ def build_wheel(
     analysis = analyse_package(root)
     metadata = WheelMetadata(
         analysis.snake_name,
-        str(analysis.project["version"]),
+        analysis.project["version"],
         f"{__name__} {__version__}",
     )
     with WheelZipWriter(wheel_directory, metadata) as writer:

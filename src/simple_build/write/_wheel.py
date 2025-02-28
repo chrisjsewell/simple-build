@@ -17,6 +17,8 @@ from types import TracebackType
 import typing as t
 import zipfile
 
+from packaging.version import Version
+
 from ..analyse import PackageAnalysis
 from ._files import gather_files, normalize_file_permissions
 from ._metadata import create_entrypoints, create_metadata
@@ -130,10 +132,15 @@ class Record:
 
 @dataclass
 class WheelMetadata:
-    """Wheel metadata, for https://peps.python.org/pep-0427/#file-name-convention"""
+    """Wheel metadata
+
+    See: https://packaging.python.org/en/latest/specifications/binary-distribution-format/#file-format
+
+    Note, this supersedes https://peps.python.org/pep-0427/#file-format
+    """
 
     name: str
-    version: str
+    version: Version
     generator: str
     python: str = "py3"
     abi: str = "none"
@@ -143,18 +150,13 @@ class WheelMetadata:
 
     def __post_init__(self) -> None:
         """Post init."""
-        pat = re.compile(r"[^\w\d.]+", re.UNICODE)
-        name = pat.sub("-", self.name)
-        version = pat.sub("-", self.version)
-        python = pat.sub("-", self.python)
-        abi = pat.sub("-", self.abi)
-        arch = pat.sub("-", self.arch)
-        self._file_name = f"{name}-{version}"
+        # see https://packaging.python.org/en/latest/specifications/binary-distribution-format/#file-name-convention
+        norm_name = re.sub(r"[-_.]+", "_", self.name).lower()
+        self._file_name = f"{norm_name}-{self.version}"
         if self.build:
-            build = pat.sub("-", self.build)
-            self._file_name += f"-{build}"
-        self._file_name += f"-{python}-{abi}-{arch}.whl"
-        self._dist_info = f"{name}-{version}.dist-info"
+            self._file_name += f"-{self.build}"
+        self._file_name += f"-{self.python}-{self.abi}-{self.arch}.whl"
+        self._dist_info = f"{norm_name}-{self.version}.dist-info"
         self._tags = []
         for x in self.python.split("."):
             for y in self.abi.split("."):
